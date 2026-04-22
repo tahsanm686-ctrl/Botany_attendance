@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>উদ্ভিদবিজ্ঞান বিভাগ — অ্যাটেনডেন্স ক্যালকুলেটর</title>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0a1a0f;
+    --bg-card: #0f2318;
+    --bg-card2: #112a1a;
+    --green-primary: #00e676;
+    --green-mid: #1db954;
+    --green-deep: #145a32;
+    --green-glow: rgba(0,230,118,0.18);
+    --teal: #00bcd4;
+    --amber: #ffb300;
+    --red-warn: #ff5252;
+    --text-main: #e8f5e9;
+    --text-muted: #7fb38a;
+    --border: rgba(0,230,118,0.18);
+    --card-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Hind Siliguri', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Animated background ── */
+  .bg-layer {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(0,100,40,0.25) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(0,60,30,0.30) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 50% 50%, rgba(0,150,70,0.08) 0%, transparent 80%);
+  }
+
+  /* SVG leaf decorations */
+  .leaf-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .leaf-bg svg { position: absolute; opacity: 0.07; }
+
+  /* ── Navbar ── */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(10,26,15,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .nav-logo { display: flex; align-items: center; gap: 12px; }
+  .nav-logo-icon {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, #1db954, #00e676);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 0 16px rgba(0,230,118,0.4);
+  }
+  .nav-title { font-size: 1.1rem; font-weight: 700; color: var(--green-primary); letter-spacing: 0.5px; }
+  .nav-sub   { font-size: 0.72rem; color: var(--text-muted); }
+
+  /* ── Hero ── */
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 3.5rem 1rem 2rem;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(0,230,118,0.1);
+    border: 1px solid rgba(0,230,118,0.3);
+    border-radius: 100px;
+    padding: 6px 18px; font-size: 0.8rem; color: var(--green-primary);
+    margin-bottom: 1.2rem;
+    animation: fadeDown 0.6s ease both;
+  }
+  .hero h1 {
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 700; line-height: 1.3;
+    background: linear-gradient(135deg, #e8f5e9 30%, #00e676 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: fadeDown 0.7s ease 0.1s both;
+  }
+  .hero p {
+    color: var(--text-muted); font-size: 1rem; margin-top: 0.8rem;
+    animation: fadeDown 0.7s ease 0.2s both;
+  }
+
+  /* ── Info chips ── */
+  .info-chips {
+    position: relative; z-index: 1;
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 12px;
+    padding: 0 1rem 2rem;
+    animation: fadeDown 0.7s ease 0.3s both;
+  }
+  .chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 22px;
+    text-align: center;
+    min-width: 130px;
+  }
+  .chip-val { font-size: 1.9rem; font-weight: 700; color: var(--green-primary); }
+  .chip-lbl { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Chip stepper ── */
+  .chip-stepper {
+    display: flex; align-items: center;
+    background: rgba(0,0,0,0.3);
+    border: 1.5px solid rgba(0,188,212,0.35);
+    border-radius: 10px; overflow: hidden;
+    margin-top: 4px;
+  }
+  .chip-step-btn {
+    background: rgba(0,188,212,0.08);
+    border: none;
+    color: var(--teal);
+    font-size: 1.2rem; font-weight: 700;
+    width: 34px; height: 40px;
+    cursor: pointer; line-height: 1;
+    transition: background 0.15s;
+    font-family: monospace;
+  }
+  .chip-step-btn:hover  { background: rgba(0,188,212,0.22); }
+  .chip-step-btn:active { background: rgba(0,188,212,0.38); }
+  .chip-stepper input[type=number] {
+    background: transparent;
+    border: none;
+    border-left:  1px solid rgba(0,188,212,0.25);
+    border-right: 1px solid rgba(0,188,212,0.25);
+    color: var(--teal);
+    font-family: 'Hind Siliguri', sans-serif;
+    font-size: 1.2rem; font-weight: 700;
+    width: 54px; height: 40px;
+    text-align: center; outline: none;
+    -moz-appearance: textfield;
+  }
+  .chip-stepper input[type=number]::-webkit-inner-spin-button,
+  .chip-stepper input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  /* Green variant — মোট ক্লাস */
+  .chip-stepper-green { border-color: rgba(0,230,118,0.35); }
+  .chip-step-green {
+    background: rgba(0,230,118,0.08) !important;
+    color: var(--green-primary) !important;
+  }
+  .chip-step-green:hover  { background: rgba(0,230,118,0.22) !important; }
+  .chip-step-green:active { background: rgba(0,230,118,0.38) !important; }
+  .chip-stepper-green input[type=number] {
+    border-left-color:  rgba(0,230,118,0.25) !important;
+    border-right-color: rgba(0,230,118,0.25) !important;
+    color: var(--green-primary) !important;
+  }
+
+  /* ── Main layout ── */
+  .main {
+    position: relative; z-index: 1;
+    max-width: 900px; margin: 0 auto; padding: 0 1rem 4rem;
+    display: grid; gap: 1.5rem;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: var(--card-shadow);
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent, var(--green-primary), transparent);
+    opacity: 0.6;
+  }
+  .card-title {
+    font-size: 1.05rem; font-weight: 600; color: var(--green-primary);
+    margin-bottom: 1.2rem; display: flex; align-items: center; gap: 8px;
+  }
+
+  /* ── Input ── */
+  .input-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+  .input-group { flex: 1; min-width: 180px; }
+  .input-group label {
+    display: block; font-size: 0.82rem; color: var(--text-muted);
+    margin-bottom: 8px; font-weight: 500;
+  }
+  .input-group input {
+    width: 100%;
+    background: rgba(0,0,0,0.35);
+    border: 1.5px solid rgba(0,230,118,0.2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    color: var(--text-main);
+    font-family: 'Hind Siliguri', sans-serif;
+    font-size: 1.1rem;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-group input:focus {
+    border-color: var(--green-primary);
+    box-shadow: 0 0 0 3px rgba(0,230,118,0.12);
+  }
+  .input-group input::placeholder { color: #3a5e45; }
+
+  .calc-btn {
+    background: linear-gradient(135deg, #1db954, #00e676);
+    color: #0a1a0f; font-family: 'Hind Siliguri', sans-serif;
+    font-weight: 700; font-size: 1rem;
+    border: none; border-radius: 12px;
+    padding: 14px 28px; cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(0,230,118,0.25);
+  }
+  .calc-btn:hover  { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(0,230,118,0.4); }
+  .calc-btn:active { transform: translateY(0); }
+
+  /* ── Error ── */
+  .error-msg {
+    color: var(--red-warn); font-size: 0.85rem; margin-top: 8px;
+    display: none;
+  }
+
+  /* ── Result area ── */
+  #result { display: none; }
+
+  /* Progress bar */
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 0.85rem; margin-bottom: 8px;
+  }
+  .progress-label span:first-child { color: var(--text-muted); }
+  .progress-label span:last-child  { font-weight: 700; font-size: 1.05rem; }
+  .progress-bar-bg {
+    background: rgba(0,0,0,0.4); border-radius: 100px;
+    height: 14px; overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 100px;
+    background: linear-gradient(90deg, #1db954, #00e676);
+    transition: width 0.8s cubic-bezier(.4,2,.6,1);
+    box-shadow: 0 0 10px rgba(0,230,118,0.5);
+    position: relative; overflow: hidden;
+  }
+  .progress-bar-fill::after {
+    content: '';
+    position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+  }
+
+  /* Summary row */
+  .summary-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 1.2rem; }
+  .sum-item {
+    flex: 1; min-width: 120px;
+    background: rgba(0,0,0,0.25); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px; text-align: center;
+  }
+  .sum-item .sv { font-size: 1.4rem; font-weight: 700; color: var(--green-primary); }
+  .sum-item .sl { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* Target cards */
+  .targets { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media(max-width:540px) { .targets { grid-template-columns: 1fr; } }
+
+  .target-card {
+    border-radius: 14px; padding: 1.4rem 1.6rem;
+    border: 1px solid;
+    position: relative; overflow: hidden;
+  }
+  .target-card.t60 {
+    background: linear-gradient(135deg, rgba(0,188,212,0.08), rgba(0,0,0,0));
+    border-color: rgba(0,188,212,0.3);
+  }
+  .target-card.t70 {
+    background: linear-gradient(135deg, rgba(0,230,118,0.08), rgba(0,0,0,0));
+    border-color: rgba(0,230,118,0.3);
+  }
+  .target-card .pct {
+    font-size: 2.2rem; font-weight: 700;
+    background: linear-gradient(135deg, #00bcd4, #4dd0e1);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .target-card.t70 .pct {
+    background: linear-gradient(135deg, #00e676, #69f0ae);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .target-card .need {
+    font-size: 1rem; color: var(--text-muted); margin-top: 6px; line-height: 1.5;
+  }
+  .target-card .need strong { color: var(--text-main); font-size: 1.2rem; }
+  .target-card .status-badge {
+    display: inline-block; margin-top: 10px;
+    padding: 4px 12px; border-radius: 100px; font-size: 0.78rem; font-weight: 600;
+  }
+  .badge-ok     { background: rgba(0,230,118,0.15);  color: #00e676; }
+  .badge-warn   { background: rgba(255,179,0,0.15);  color: var(--amber); }
+  .badge-danger { background: rgba(255,82,82,0.15);  color: var(--red-warn); }
+  .badge-done   { background: rgba(0,230,118,0.2);   color: #00e676; }
+
+  /* Divider */
+  .divider { height: 1px; background: var(--border); margin: 0.5rem 0 1.2rem; }
+
+  /* ── Footer ── */
+  footer {
+    position: relative; z-index: 1;
+    text-align: center; padding: 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 0.82rem;
+  }
+
+  /* ── Animations ── */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes shimmer { to { left: 120%; } }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50%     { transform: translateY(-12px) rotate(3deg); }
+  }
+  @keyframes pulse-ring {
+    0%   { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 0; }
+  }
+
+  .floating      { animation: float 6s ease-in-out infinite; }
+  .floating-slow { animation: float 9s ease-in-out infinite; }
+
+  /* ── Glow dot ── */
+  .glow-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--green-primary);
+    box-shadow: 0 0 8px var(--green-primary);
+    display: inline-block; position: relative;
+  }
+  .glow-dot::after {
+    content: ''; position: absolute; inset: 0;
+    border-radius: 50%; background: var(--green-primary);
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- Background layers -->
+<div class="bg-layer"></div>
+<div class="leaf-bg">
+  <!-- Big leaf top-left -->
+  <svg width="420" height="420" viewBox="0 0 420 420" style="top:-80px;left:-120px;" class="floating-slow">
+    <path d="M60,380 Q200,20 380,60 Q300,200 60,380Z" fill="#00e676"/>
+    <path d="M60,380 Q220,180 380,60" stroke="#00e676" stroke-width="3" fill="none"/>
+  </svg>
+  <!-- Fern bottom-right -->
+  <svg width="360" height="360" viewBox="0 0 360 360" style="bottom:-60px;right:-80px;" class="floating">
+    <ellipse cx="180" cy="260" rx="30" ry="100" fill="#1db954" transform="rotate(-20,180,260)"/>
+    <ellipse cx="180" cy="260" rx="20" ry="70"  fill="#1db954" transform="rotate(20,180,260)"/>
+    <ellipse cx="180" cy="260" rx="15" ry="50"  fill="#1db954" transform="rotate(50,180,260)"/>
+    <ellipse cx="180" cy="260" rx="15" ry="50"  fill="#1db954" transform="rotate(-50,180,260)"/>
+    <line x1="180" y1="360" x2="180" y2="160" stroke="#00e676" stroke-width="4"/>
+  </svg>
+  <!-- Algae top-right -->
+  <svg width="200" height="200" viewBox="0 0 200 200" style="top:60px;right:40px;" class="floating">
+    <circle cx="60"  cy="100" r="45" fill="#00bcd4"/>
+    <circle cx="130" cy="80"  r="35" fill="#00bcd4"/>
+    <circle cx="110" cy="140" r="30" fill="#00bcd4"/>
+  </svg>
+  <!-- Mushroom left-mid -->
+  <svg width="180" height="220" viewBox="0 0 180 220" style="top:40%;left:10px;" class="floating-slow">
+    <ellipse cx="90" cy="90"  rx="75" ry="55" fill="#8d6e63"/>
+    <ellipse cx="90" cy="90"  rx="60" ry="40" fill="#a1887f"/>
+    <rect x="75" y="130" width="30" height="60" rx="10" fill="#d7ccc8"/>
+    <ellipse cx="90" cy="195" rx="30" ry="10" fill="#bcaaa4" opacity="0.5"/>
+  </svg>
+</div>
+
+<!-- Navbar -->
+<nav>
+  <div class="nav-logo">
+    <div class="nav-logo-icon">🌿</div>
+    <div>
+      <div class="nav-title">সরকারি হাজী মুহাম্মদ মহসিন কলেজ</div>
+      <div class="nav-sub">Govt. Haji Muhammad Mohsin College</div>
+    </div>
+  </div>
+  <div style="font-size:0.78rem;color:var(--text-muted);font-style:italic;opacity:0.8;">
+    Developed by <span style="color:var(--green-primary);font-weight:700;">TAMZID</span>
+  </div>
+</nav>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">
+    <span class="glow-dot"></span>
+    ২০২৩–২৪ শিক্ষাবর্ষ
+  </div>
+  <h1>অ্যাটেনডেন্স ক্যালকুলেটর</h1>
+  <p>তোমার উপস্থিতির হিসাব রাখো — লক্ষ্য পূরণ করো</p>
+</div>
+
+<!-- Info chips -->
+<div class="info-chips">
+
+  <!-- মোট ক্লাস stepper -->
+  <div class="chip" style="min-width:160px">
+    <div class="chip-lbl" style="margin-bottom:6px">মোট ক্লাস</div>
+    <div class="chip-stepper chip-stepper-green">
+      <button class="chip-step-btn chip-step-green" onclick="changeTotal(-1)">&#8722;</button>
+      <input type="number" id="totalInput" value="70" min="1"
+             oninput="onTotalInput()" onchange="onTotalInput()">
+      <button class="chip-step-btn chip-step-green" onclick="changeTotal(1)">+</button>
+    </div>
+  </div>
+
+  <!-- অনুষ্ঠিত ক্লাস stepper -->
+  <div class="chip" style="min-width:160px">
+    <div class="chip-lbl" style="margin-bottom:6px">অনুষ্ঠিত ক্লাস</div>
+    <div class="chip-stepper">
+      <button class="chip-step-btn" onclick="changeHeld(-1)">&#8722;</button>
+      <input type="number" id="heldInput" value="35" min="1"
+             oninput="onHeldInput()" onchange="onHeldInput()">
+      <button class="chip-step-btn" onclick="changeHeld(1)">+</button>
+    </div>
+  </div>
+
+  <!-- বাকি ক্লাস (auto-calculated) -->
+  <div class="chip">
+    <div class="chip-val" style="color:var(--amber)" id="chipRemaining">৩৫</div>
+    <div class="chip-lbl">বাকি ক্লাস</div>
+  </div>
+
+  <!-- ন্যূনতম উপস্থিতি -->
+  <div class="chip">
+    <div class="chip-val" style="color:#ff7043">৬০%</div>
+    <div class="chip-lbl">ন্যূনতম উপস্থিতি</div>
+  </div>
+
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Calculator card -->
+  <div class="card" style="animation-delay:0.1s">
+    <div class="card-title">🧮 ক্লাস সংখ্যা দাও</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>তুমি কতটি ক্লাসে উপস্থিত ছিলে?</label>
+        <input type="number" id="attended" placeholder="যেমন: ২৮" min="0" max="35">
+      </div>
+      <button class="calc-btn" onclick="calculate()">হিসাব করো →</button>
+    </div>
+    <div class="error-msg" id="errMsg">⚠️ সঠিক সংখ্যা দাও (০ থেকে অনুষ্ঠিত ক্লাসের মধ্যে)</div>
+  </div>
+
+  <!-- Result card -->
+  <div class="card" id="result" style="animation-delay:0.2s">
+    <div class="card-title">📊 তোমার অ্যাটেনডেন্স রিপোর্ট</div>
+
+    <!-- Progress bar -->
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>বর্তমান উপস্থিতির হার</span>
+        <span id="currentPct" style="color:var(--green-primary)">০%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Summary numbers -->
+    <div class="summary-row">
+      <div class="sum-item">
+        <div class="sv" id="sumAttended">০</div>
+        <div class="sl">উপস্থিত ক্লাস</div>
+      </div>
+      <div class="sum-item">
+        <div class="sv" id="sumMissed" style="color:var(--red-warn)">০</div>
+        <div class="sl">অনুপস্থিত ক্লাস</div>
+      </div>
+      <div class="sum-item">
+        <div class="sv" id="sumRemaining" style="color:var(--amber)">৩৫</div>
+        <div class="sl">বাকি ক্লাস</div>
+      </div>
+      <div class="sum-item">
+        <div class="sv" id="sumTotal">৭০</div>
+        <div class="sl">মোট ক্লাস</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title" style="margin-bottom:1rem">🎯 লক্ষ্যমাত্রা পূরণের হিসাব</div>
+
+    <!-- Target cards -->
+    <div class="targets">
+      <div class="target-card t60">
+        <div class="pct">৬০%</div>
+        <div class="need" id="need60">—</div>
+        <div id="badge60" class="status-badge"></div>
+      </div>
+      <div class="target-card t70">
+        <div class="pct">৭০%</div>
+        <div class="need" id="need70">—</div>
+        <div id="badge70" class="status-badge"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<footer>
+  উদ্ভিদবিজ্ঞান বিভাগ &nbsp;·&nbsp; Botany Department &nbsp;·&nbsp; ২০২৩–২৪
+</footer>
+
+<script>
+  let TOTAL_CLASSES = 70;
+  let HELD_CLASSES  = 35;
+  let REMAINING     = 35;
+
+  /* বাংলা সংখ্যা রূপান্তর */
+  function bn(n) {
+    return String(n).replace(/\d/g, d => '০১২৩৪৫৬৭৮৯'[d]);
+  }
+
+  /* সব UI আপডেট */
+  function refreshUI() {
+    REMAINING = Math.max(0, TOTAL_CLASSES - HELD_CLASSES);
+    document.getElementById('chipRemaining').textContent  = bn(REMAINING);
+    document.getElementById('sumRemaining').textContent   = bn(REMAINING);
+    document.getElementById('sumTotal').textContent       = bn(TOTAL_CLASSES);
+    document.getElementById('attended').max               = HELD_CLASSES;
+    document.getElementById('attended').placeholder       = 'যেমন: ' + bn(Math.floor(HELD_CLASSES * 0.8));
+    document.getElementById('result').style.display       = 'none';
+    document.getElementById('errMsg').style.display       = 'none';
+    document.getElementById('attended').value             = '';
+  }
+
+  /* ── মোট ক্লাস stepper ── */
+  function changeTotal(delta) {
+    const newVal = TOTAL_CLASSES + delta;
+    if (newVal < 1) return;
+    TOTAL_CLASSES = newVal;
+    document.getElementById('totalInput').value = TOTAL_CLASSES;
+    if (HELD_CLASSES > TOTAL_CLASSES) {
+      HELD_CLASSES = TOTAL_CLASSES;
+      document.getElementById('heldInput').value = HELD_CLASSES;
+    }
+    refreshUI();
+  }
+
+  function onTotalInput() {
+    const inp = document.getElementById('totalInput');
+    let val = parseInt(inp.value);
+    if (isNaN(val) || val < 1) val = 1;
+    TOTAL_CLASSES = val;
+    inp.value = val;
+    if (HELD_CLASSES > TOTAL_CLASSES) {
+      HELD_CLASSES = TOTAL_CLASSES;
+      document.getElementById('heldInput').value = HELD_CLASSES;
+    }
+    refreshUI();
+  }
+
+  /* ── অনুষ্ঠিত ক্লাস stepper ── */
+  function changeHeld(delta) {
+    const newVal = HELD_CLASSES + delta;
+    if (newVal < 1 || newVal > TOTAL_CLASSES) return;
+    HELD_CLASSES = newVal;
+    document.getElementById('heldInput').value = HELD_CLASSES;
+    refreshUI();
+  }
+
+  function onHeldInput() {
+    const inp = document.getElementById('heldInput');
+    let val = parseInt(inp.value);
+    if (isNaN(val) || val < 1) val = 1;
+    if (val > TOTAL_CLASSES) { val = TOTAL_CLASSES; inp.value = val; }
+    HELD_CLASSES = val;
+    refreshUI();
+  }
+
+  /* ── হিসাব ── */
+  function calculate() {
+    const attended = parseInt(document.getElementById('attended').value);
+    const errMsg   = document.getElementById('errMsg');
+    const result   = document.getElementById('result');
+
+    if (isNaN(attended) || attended < 0 || attended > HELD_CLASSES) {
+      errMsg.style.display  = 'block';
+      result.style.display  = 'none';
+      return;
+    }
+    errMsg.style.display = 'none';
+
+    const missed     = HELD_CLASSES - attended;
+    const currentPct = (attended / TOTAL_CLASSES) * 100;
+
+    const need60total = Math.ceil(0.60 * TOTAL_CLASSES);
+    const need70total = Math.ceil(0.70 * TOTAL_CLASSES);
+    const need60more  = Math.max(0, need60total - attended);
+    const need70more  = Math.max(0, need70total - attended);
+    const ach60       = attended >= need60total;
+    const ach70       = attended >= need70total;
+    const poss60      = ach60 || need60more <= REMAINING;
+    const poss70      = ach70 || need70more <= REMAINING;
+
+    result.style.display = 'block';
+
+    /* Progress bar */
+    document.getElementById('currentPct').textContent = bn(currentPct.toFixed(1)) + '%';
+    document.getElementById('currentPct').style.color =
+      currentPct >= 70 ? 'var(--green-primary)' :
+      currentPct >= 60 ? 'var(--amber)' : 'var(--red-warn)';
+
+    document.getElementById('progressFill').style.width = Math.min(currentPct, 100) + '%';
+    document.getElementById('progressFill').style.background =
+      currentPct >= 70 ? 'linear-gradient(90deg,#1db954,#00e676)' :
+      currentPct >= 60 ? 'linear-gradient(90deg,#f57f17,#ffb300)' :
+                         'linear-gradient(90deg,#b71c1c,#ff5252)';
+
+    /* Summary */
+    document.getElementById('sumAttended').textContent  = bn(attended);
+    document.getElementById('sumMissed').textContent    = bn(missed);
+    document.getElementById('sumRemaining').textContent = bn(REMAINING);
+    document.getElementById('sumTotal').textContent     = bn(TOTAL_CLASSES);
+
+    /* ৬০% card */
+    const n60 = document.getElementById('need60');
+    const b60 = document.getElementById('badge60');
+    if (ach60) {
+      n60.innerHTML   = 'তুমি ইতিমধ্যে <strong>৬০%</strong> পূরণ করেছ! 🎉';
+      b60.textContent = '✓ অর্জিত';
+      b60.className   = 'status-badge badge-done';
+    } else if (poss60) {
+      n60.innerHTML   = `বাকি ${bn(REMAINING)} ক্লাসের মধ্যে<br>আরও <strong>${bn(need60more)}টি</strong> ক্লাসে যেতে হবে`;
+      b60.textContent = '✓ অর্জনযোগ্য';
+      b60.className   = 'status-badge badge-ok';
+    } else {
+      n60.innerHTML   = '⚠️ বাকি ক্লাসে সব গেলেও<br>৬০% পূরণ সম্ভব নয়';
+      b60.textContent = '✗ সম্ভব নয়';
+      b60.className   = 'status-badge badge-danger';
+    }
+
+    /* ৭০% card */
+    const n70 = document.getElementById('need70');
+    const b70 = document.getElementById('badge70');
+    if (ach70) {
+      n70.innerHTML   = 'তুমি ইতিমধ্যে <strong>৭০%</strong> পূরণ করেছ! 🎉';
+      b70.textContent = '✓ অর্জিত';
+      b70.className   = 'status-badge badge-done';
+    } else if (poss70) {
+      n70.innerHTML   = `বাকি ${bn(REMAINING)} ক্লাসের মধ্যে<br>আরও <strong>${bn(need70more)}টি</strong> ক্লাসে যেতে হবে`;
+      b70.textContent = need70more > REMAINING * 0.8 ? '⚠ কঠিন' : '✓ অর্জনযোগ্য';
+      b70.className   = 'status-badge ' + (need70more > REMAINING * 0.8 ? 'badge-warn' : 'badge-ok');
+    } else {
+      n70.innerHTML   = '⚠️ বাকি ক্লাসে সব গেলেও<br>৭০% পূরণ সম্ভব নয়';
+      b70.textContent = '✗ সম্ভব নয়';
+      b70.className   = 'status-badge badge-danger';
+    }
+
+    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* Enter key */
+  document.getElementById('attended').addEventListener('keydown', e => {
+    if (e.key === 'Enter') calculate();
+  });
+</script>
+</body>
+</html>
